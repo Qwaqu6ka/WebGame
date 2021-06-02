@@ -11,12 +11,25 @@ class Hero {
 		this.y = canvas.height / 2;
 	}
 }
+class HeroShot {
+	constructor(x, y) {
+		this.x = x;
+		this.y = y;
+	}
+}
 
 const hero = new Hero(3);
 const heroSize = 120;
 const hengineSize = 40;
 const heroSpeed = 6;
 let engineMover = 1;
+const HeroShotLen = 10;
+const HeroShotWid = 20;
+const heroShotSpeed = 10;
+const heroRateOfFire = 30;
+let heroShotTimeout = 0;
+let heroShots = [];
+let heroShotsImg = [];
 
 const heroImg = new Image();
 const hengineImg = new Image();
@@ -84,6 +97,9 @@ function draw() {
 	ctx.clearRect(0, 0, canvas.width, canvas.height);
 	ctx.drawImage(heroImg, hero.x, hero.y, heroSize, heroSize);
 	ctx.drawImage(hengineImg, hero.x - 40, hero.y + 38 + engineMover, 40, 40);
+	for (let i = 0; i < heroShotsImg.length; ++i) {
+		ctx.drawImage(heroShotsImg[i], heroShots[i].x, heroShots[i].y, HeroShotWid, HeroShotLen);
+	}
 	engineMover = - engineMover;
 	
 	if (upPressed && hero.y > 0) {
@@ -98,8 +114,26 @@ function draw() {
 	if (rightPressed && hero.x < canvas.width - heroSize) {
 		hero.x += heroSpeed;
 	}
-	if (shoot)
-		console.log("shoot");
-}
+	if (shoot) {
+		++heroShotTimeout;
+		if (heroShotTimeout == heroRateOfFire) {
+			heroShotTimeout = 0;
+			heroShots.push(new HeroShot(hero.x + 75, hero.y + 25));
+			heroShots.push(new HeroShot(hero.x + 75, hero.y + 85));
+			heroShotsImg.push(new Image());
+			heroShotsImg.push(new Image());
+			heroShotsImg[heroShotsImg.length - 1].addEventListener("load", function() {
+				ctx.drawImage(heroShotsImg[heroShotsImg.length - 2], hero.x + 75, hero.y + 25, HeroShotWid, HeroShotLen);
+				ctx.drawImage(heroShotsImg[heroShotsImg.length - 1], hero.x + 75, hero.y + 85, HeroShotWid, HeroShotLen);
+				}, false);
+			heroShotsImg[heroShotsImg.length - 2].src = "src/hero_shot.png";
+			heroShotsImg[heroShotsImg.length - 1].src = "src/hero_shot.png";
+		}
 
+	}
+	for (let i = 0; i < heroShots.length; ++i) {
+		heroShots[i].x += heroShotSpeed;
+	}
+
+}
 setInterval(draw, 10);
