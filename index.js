@@ -11,11 +11,12 @@ class Hero {
 		this.y = canvas.height / 2;
 	}
 }
-class HeroShot {
-	constructor(x, y) {
+class Shot {
+	constructor(x, y, char) {
 		this.x = x;
 		this.y = y;
-	}
+		this.char = char;	// "h" - hero // "e" - enemy // "b" - boss
+	}	// "char" means character
 }
 
 const hero = new Hero(3);
@@ -27,14 +28,12 @@ const HeroShotLen = 10;
 const HeroShotWid = 20;
 const heroShotSpeed = 10;
 const heroRateOfFire = 30;
-let heroShotTimeout = 0;
-let heroShots = [];
-let heroShotsImg = [];
+let heroShotTimeout = heroRateOfFire;
+const Shots = [];
+const ShotsImg = [];
 
 const heroImg = new Image();
 const hengineImg = new Image();
-// let enemy1Img = new Image();
-// let enemy1_engine = new Image();
 heroImg.addEventListener("load", function() {
 	ctx.drawImage(heroImg, hero.x, hero.y, heroSize, heroSize);
 	ctx.drawImage(hengineImg, hero.x - hengineSize, hero.y + hengineSize, hengineSize, hengineSize);
@@ -44,8 +43,7 @@ hengineImg.src = "src/hero_engine.png";
 
 
 
-//-------------------------------УПРАВЛЕНИЕ--------------------------------------
-
+//---------------------------------УПРАВЛЕНИЕ--------------------------------------
 let upPressed = false;
 let rightPressed = false;
 let downPressed = false;
@@ -91,16 +89,67 @@ function keyUpHandler(e) {
 	}
 }
 
+//------------------------------------СПАВН ПРОТИВНИКОВ--------------------------------------
+function getRandomInt(max) {
+	return Math.floor(Math.random() * max);
+}
+class Enemy {
+	constructor(hp, x, y) {
+		this.hp = hp;
+		this.x = x;
+		this.y = y;
+	}
+}
+const enemyWid = 130;
+const enemyHei = 80;
+const enemyEngWid = 60;
+const enemyEngHei = 60;
+const enemySpawnTime = 200;
+let enemySpawnTimeout = enemySpawnTime;
+const enemy = [];
+const enemyImg = [];
+const enemyEngineImg = [];
 
-//----------------------------------ГЛАВНЫЙ ЦИКЛ-----------------------------------------
+function spawnEnemy() {
+	enemy.push(new Enemy(2, canvas.width / 2, getRandomInt(canvas.height - enemyHei))); //! поменять спавн после теста
+	enemyImg.push(new Image());
+	enemyEngineImg.push(new Image());
+	enemyEngineImg[enemyEngineImg.length - 1].addEventListener("load", function() {
+		ctx.drawImage(enemyImg[enemyImg.length - 1], enemy[enemy.length - 1].x, enemy[enemy.length - 1].y, enemyWid, enemyHei);
+		ctx.drawImage(enemyEngineImg[enemyEngineImg.length - 1], enemy[enemy.length - 1].x + 113 + engineMover, enemy[enemy.length - 1].y + 10, enemyEngWid, enemyEngHei);
+		}, false);
+	enemyImg[enemyImg.length - 1].src = "src/enemy1.png";
+	enemyEngineImg[enemyEngineImg.length - 1].src = "src/enemy1_engine.png";
+}
+
+//---------------------------------СТРЕЛЬБА ГЕРОЯ------------------------------------------
+function herosShoot() {
+	Shots.push(new Shot(hero.x + 75, hero.y + 25, "h"));
+	Shots.push(new Shot(hero.x + 75, hero.y + 85, "h"));
+	ShotsImg.push(new Image());
+	ShotsImg.push(new Image());
+	ShotsImg[ShotsImg.length - 1].addEventListener("load", function() {
+		ctx.drawImage(ShotsImg[ShotsImg.length - 2], hero.x + 75, hero.y + 25, HeroShotWid, HeroShotLen);
+		ctx.drawImage(ShotsImg[ShotsImg.length - 1], hero.x + 75, hero.y + 85, HeroShotWid, HeroShotLen);
+		}, false);
+	ShotsImg[ShotsImg.length - 2].src = "src/hero_shot.png";
+	ShotsImg[ShotsImg.length - 1].src = "src/hero_shot.png";
+}
+
+//------------------------------------ГЛАВНЫЙ ЦИКЛ-----------------------------------------
 function draw() {
 	ctx.clearRect(0, 0, canvas.width, canvas.height);
 	ctx.drawImage(heroImg, hero.x, hero.y, heroSize, heroSize);
 	ctx.drawImage(hengineImg, hero.x - 40, hero.y + 38 + engineMover, 40, 40);
-	for (let i = 0; i < heroShotsImg.length; ++i) {
-		ctx.drawImage(heroShotsImg[i], heroShots[i].x, heroShots[i].y, HeroShotWid, HeroShotLen);
+	for (let i = 0; i < enemy.length; ++i) {
+		ctx.drawImage(enemyImg[i], enemy[i].x, enemy[i].y, enemyWid, enemyHei);
+		ctx.drawImage(enemyEngineImg[i], enemy[i].x + 113 + engineMover, enemy[i].y + 10, enemyEngWid, enemyEngHei);
 	}
 	engineMover = - engineMover;
+	for (let i = 0; i < ShotsImg.length; ++i) {
+		ctx.drawImage(ShotsImg[i], Shots[i].x, Shots[i].y, HeroShotWid, HeroShotLen);
+	}
+	
 	
 	if (upPressed && hero.y > 0) {
 		hero.y -= heroSpeed;
@@ -116,24 +165,20 @@ function draw() {
 	}
 	if (shoot) {
 		++heroShotTimeout;
-		if (heroShotTimeout == heroRateOfFire) {
+		if (heroShotTimeout >= heroRateOfFire) {
 			heroShotTimeout = 0;
-			heroShots.push(new HeroShot(hero.x + 75, hero.y + 25));
-			heroShots.push(new HeroShot(hero.x + 75, hero.y + 85));
-			heroShotsImg.push(new Image());
-			heroShotsImg.push(new Image());
-			heroShotsImg[heroShotsImg.length - 1].addEventListener("load", function() {
-				ctx.drawImage(heroShotsImg[heroShotsImg.length - 2], hero.x + 75, hero.y + 25, HeroShotWid, HeroShotLen);
-				ctx.drawImage(heroShotsImg[heroShotsImg.length - 1], hero.x + 75, hero.y + 85, HeroShotWid, HeroShotLen);
-				}, false);
-			heroShotsImg[heroShotsImg.length - 2].src = "src/hero_shot.png";
-			heroShotsImg[heroShotsImg.length - 1].src = "src/hero_shot.png";
+			herosShoot();
 		}
-
+	}	
+	// ++enemySpawnTimeout;
+	if (enemySpawnTimeout == enemySpawnTime) {
+		enemySpawnTimeout = 0;
+		spawnEnemy();
 	}
-	for (let i = 0; i < heroShots.length; ++i) {
-		heroShots[i].x += heroShotSpeed;
-	}
 
+	for (let i = 0; i < Shots.length; ++i) {
+		if (Shots[i].char == "h")
+			Shots[i].x += heroShotSpeed;
+	}
 }
 setInterval(draw, 10);
