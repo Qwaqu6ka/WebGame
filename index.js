@@ -97,12 +97,17 @@ function getRandomInt(max) {
 	return Math.floor(Math.random() * max);
 }
 class Enemy {
-	constructor(hp, x, y) {
+	constructor(hp, x, y, dy) {
 		this.hp = hp;
 		this.x = x;
 		this.y = y;
+		this.dy = dy;
+		this.shoot = 0;
 	}
 }
+const enemyRateOfFire = 30;
+const dxEnemy = -1;
+const dyEnemy = -2;
 const enemyWid = 130;
 const enemyHei = 80;
 const enemyEngWid = 60;
@@ -114,7 +119,9 @@ const enemyImg = [];
 const enemyEngineImg = [];
 
 function spawnEnemy() {
-	enemy.push(new Enemy(3, canvas.width / 2, getRandomInt(canvas.height - enemyHei))); //! поменять спавн после теста
+	let dir;	// начальное направление врагов(вверх или вниз)
+	getRandomInt(4) < 2 ? dir = dyEnemy : dir = - dyEnemy;	// равновероятный шанс
+	enemy.push(new Enemy(3, canvas.width, getRandomInt(canvas.height - enemyHei), dir)); //! поменять спавн посел теста
 	enemyImg.push(new Image());
 	enemyEngineImg.push(new Image());
 	enemyEngineImg[enemyEngineImg.length - 1].addEventListener("load", function() {
@@ -190,6 +197,7 @@ function draw() {
 			if (++deathPlace[i].stage > 6) {	// если была показана последняя анимация - удаляем взрыв
 				deathPlace.splice(i, 1);;
 				deathPlaceImg.splice(i, 1);
+				--i;
 				continue;
 			}
 			deathPlaceImg[i].src = `src/explosion${deathPlace[i].stage}.png`;
@@ -211,6 +219,7 @@ function draw() {
 	if (rightPressed && hero.x < canvas.width - heroSize) {
 		hero.x += heroSpeed;
 	}
+
 	//	обработка стрельбы героя
 	if (shoot) {
 		++heroShotTimeout;
@@ -219,9 +228,27 @@ function draw() {
 			herosShoot();
 		}
 	}	
-	//обработка спавна врагов
-	//! ++enemySpawnTimeout;
-	if (enemySpawnTimeout == enemySpawnTime) {
+
+	// движение врагов
+	for (let i = 0; i < enemy.length; ++i) {
+		enemy[i].x += dxEnemy;
+		if (enemy[i].y + enemy[i].dy < 0 || enemy[i].y + enemy[i].dy > canvas.height - enemyHei)
+			enemy[i].dy = -enemy[i].dy;
+		enemy[i].y += enemy[i].dy;
+		// проверка на столкновение
+		if ((hero.x + heroSize < enemy[i].x + enemyWid && hero.x + heroSize > enemy[i].x || hero.x < enemy[i].x + enemyWid && hero.x > enemy[i].x) 
+		&& (hero.y > enemy[i].y && hero.y < enemy[i].y + enemyHei || hero.y + heroSize > enemy[i].y && hero.y + heroSize < enemy[i].y + enemyHei)) 
+		{
+			enemyDeath(i);
+			if (hero.hp != -1 && --hero.hp == 0)
+				console.log("умер");	
+		}
+	}	
+
+	// обработка спавна врагов
+	// ++enemySpawnTimeout;		// 1) вариант с определённым временем спавна
+	// if (enemySpawnTimeout >= enemySpawnTime) {
+	if (getRandomInt(200) < 1) {	// 2) вариант с раномом
 		enemySpawnTimeout = 0;
 		spawnEnemy();
 	}
@@ -236,7 +263,7 @@ function draw() {
 					shotsImg.splice(i, 1);	//? декремент i ?
 					if (--enemy[j].hp == 0) 	// проверка здоровья
 						enemyDeath(j);
-					// else
+					// else			// TODO: сделать функцию попадания
 					// 	hit();
 				}
 			}
