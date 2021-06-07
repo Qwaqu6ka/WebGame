@@ -102,11 +102,14 @@ class Enemy {
 		this.x = x;
 		this.y = y;
 		this.dy = dy;
-		this.shoot = 0;
+		this.shootTimer = 0;
 	}
 }
-const enemyRateOfFire = 30;
-const dxEnemy = -1;
+const enemyShotWid = 20;
+const enemyShotHei = 10;
+const enemyRateOfFire = 200;
+const enemyShotSpeed = -3;
+const dxEnemy = -2;
 const dyEnemy = -2;
 const enemyWid = 130;
 const enemyHei = 80;
@@ -121,7 +124,7 @@ const enemyEngineImg = [];
 function spawnEnemy() {
 	let dir;	// начальное направление врагов(вверх или вниз)
 	getRandomInt(4) < 2 ? dir = dyEnemy : dir = - dyEnemy;	// равновероятный шанс
-	enemy.push(new Enemy(3, canvas.width, getRandomInt(canvas.height - enemyHei), dir)); //! поменять спавн посел теста
+	enemy.push(new Enemy(3, canvas.width, getRandomInt(canvas.height - enemyHei), dir));
 	enemyImg.push(new Image());
 	enemyEngineImg.push(new Image());
 	enemyEngineImg[enemyEngineImg.length - 1].addEventListener("load", function() {
@@ -140,11 +143,25 @@ function herosShoot() {
 	shotsImg.push(new Image());
 	shotsImg.push(new Image());
 	shotsImg[shotsImg.length - 1].addEventListener("load", function() {
-		ctx.drawImage(shotsImg[shotsImg.length - 2], hero.x + 75, hero.y + 25, heroShotWid, heroShotHei);
-		ctx.drawImage(shotsImg[shotsImg.length - 1], hero.x + 75, hero.y + 85, heroShotWid, heroShotHei);
+		ctx.drawImage(shotsImg[shotsImg.length - 2], shots[shots.length - 2].x, shots[shots.length - 2].y, heroShotWid, heroShotHei);
+		ctx.drawImage(shotsImg[shotsImg.length - 1], shots[shots.length - 1].x, shots[shots.length - 1].y, heroShotWid, heroShotHei);
 		}, false);
 	shotsImg[shotsImg.length - 2].src = "src/hero_shot.png";
 	shotsImg[shotsImg.length - 1].src = "src/hero_shot.png";
+}
+
+//-----------------------------------СТРЕЛЬБА ВРАГОВ--------------------------------------
+function enemyShoots(i) {
+	shots.push(new Shot(enemy[i].x + 15, enemy[i].y + 8, "e"));
+	shots.push(new Shot(enemy[i].x + 15, enemy[i].y + 61, "e"));
+	shotsImg.push(new Image());
+	shotsImg.push(new Image());
+	shotsImg[shotsImg.length - 1].addEventListener("load", function() {
+		ctx.drawImage(shotsImg[shotsImg.length - 2], shots[shots.length - 2].x, shots[shots.length - 2].y, enemyShotWid, enemyShotHei);
+		ctx.drawImage(shotsImg[shotsImg.length - 1], shots[shots.length - 1].x, shots[shots.length - 1].y, enemyShotWid, enemyShotHei);
+		}, false);
+	shotsImg[shotsImg.length - 2].src = "src/enemy_shot.png";
+	shotsImg[shotsImg.length - 1].src = "src/enemy_shot.png";
 }
 
 
@@ -229,9 +246,9 @@ function draw() {
 		}
 	}	
 
-	// движение врагов
+	// движение и стрельба врагов
 	for (let i = 0; i < enemy.length; ++i) {
-		enemy[i].x += dxEnemy;
+		enemy[i].x += dxEnemy;	// движение
 		if (enemy[i].y + enemy[i].dy < 0 || enemy[i].y + enemy[i].dy > canvas.height - enemyHei)
 			enemy[i].dy = -enemy[i].dy;
 		enemy[i].y += enemy[i].dy;
@@ -243,12 +260,16 @@ function draw() {
 			if (hero.hp != -1 && --hero.hp == 0)
 				console.log("умер");	
 		}
+		else if (++enemy[i].shootTimer >= enemyRateOfFire) {	// если не столкнулись то стреляет
+			enemy[i].shootTimer = 0;
+			enemyShoots(i);
+		}
 	}	
 
 	// обработка спавна врагов
 	// ++enemySpawnTimeout;		// 1) вариант с определённым временем спавна
 	// if (enemySpawnTimeout >= enemySpawnTime) {
-	if (getRandomInt(200) < 1) {	// 2) вариант с раномом
+	if (getRandomInt(150) < 1) {	// 2) вариант с раномом
 		enemySpawnTimeout = 0;
 		spawnEnemy();
 	}
@@ -266,6 +287,16 @@ function draw() {
 					// else			// TODO: сделать функцию попадания
 					// 	hit();
 				}
+			}
+		}
+		else if (shots[i].char == "e" || shots[i].char == "b") {
+			shots[i].x += enemyShotSpeed;	// движение
+			if (shots[i].x + enemyShotWid / 2 >= hero.x && shots[i].x + enemyShotWid / 2 <= hero.x + heroSize &&
+			shots[i].y + enemyShotHei / 2 >= hero.y && shots[i].y + enemyShotHei / 2 <= hero.y + heroSize) {	// столкновение
+				shots.splice(i, 1);		// удаление снаряда
+				shotsImg.splice(i, 1);
+				if (hero.hp != -1 && --hero.hp == 0)
+					console.log("умер");
 			}
 		}
 	}
