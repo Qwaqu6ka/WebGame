@@ -45,7 +45,6 @@ heroImg.src = "src/hero.png";
 hengineImg.src = "src/hero_engine.png";
 
 
-
 //---------------------------------УПРАВЛЕНИЕ--------------------------------------
 let upPressed = false;
 let rightPressed = false;
@@ -193,17 +192,57 @@ function enemyDeath(i) {	// добавление взрыва и удалени�
 	enemyEngineImg.splice(i, 1);
 }
 
+//--------------------------------------ЗДОРОВЬЕ-------------------------------------------
+const heartStepX = 50;
+const heartY = 20;
+const heartHei = 35;
+const heartWid = 40;
+let immortalTimer = 0;
+const immortalTimeout = 300;
+const heartX = [hero.hp];
+const heartImg = [];
+for (let i = 0; i < hero.hp; ++i) {
+	if (i == 0) {
+		heartX[i] = 20;
+		continue;
+	}
+	heartX[i] = heartX[i - 1] + heartStepX;
+}
+for (let i = 0; i < hero.hp; ++i) {
+	heartImg.push(new Image());
+	heartImg[heartImg.length - 1].addEventListener("load", function() {
+		ctx.drawImage(heartImg[heartImg.length - 1], heartX[i], heartY, heartWid, heartHei);
+		}, false);
+	heartImg[heartImg.length - 1].src = "src/hp.png";
+}
+
 
 //------------------------------------ГЛАВНЫЙ ЦИКЛ-----------------------------------------
 function draw() {
 	ctx.clearRect(0, 0, canvas.width, canvas.height);	// отчистка холст
 	ctx.drawImage(heroImg, hero.x, hero.y, heroSize, heroSize);  // отрисовка героя
 	ctx.drawImage(hengineImg, hero.x - 40, hero.y + 38 + engineMover, 40, 40);	// отрисовка двигателя героя
+
 	for (let i = 0; i < enemy.length; ++i) {	// отрисовка противников и их двигателей
 		ctx.drawImage(enemyImg[i], enemy[i].x, enemy[i].y, enemyWid, enemyHei);
 		ctx.drawImage(enemyEngineImg[i], enemy[i].x + 113 + engineMover, enemy[i].y + 10, enemyEngWid, enemyEngHei);
 	}
 	engineMover = -engineMover;	// движение огня у кораблей
+
+	// отрисовка здоровья
+	++immortalTimer;
+	if (hero.hp == -1) {
+		ctx.font = "30px Comic Sans MS";
+		ctx.fillStyle = "white";
+		ctx.textAlign = "center";
+		ctx.fillText("god", 50, 40);
+	}
+	else {
+		for (let i = 0; i < hero.hp; ++i) {
+			ctx.drawImage(heartImg[heartImg.length - 1], heartX[i], heartY, heartWid, heartHei);
+		}
+	}
+
 	for (let i = 0; i < shotsImg.length; ++i) {		// отрисовка всех снарядов
 		ctx.drawImage(shotsImg[i], shots[i].x, shots[i].y, heroShotWid, heroShotHei);
 	}
@@ -256,9 +295,12 @@ function draw() {
 		if ((hero.x + heroSize < enemy[i].x + enemyWid && hero.x + heroSize > enemy[i].x || hero.x < enemy[i].x + enemyWid && hero.x > enemy[i].x) 
 		&& (hero.y > enemy[i].y && hero.y < enemy[i].y + enemyHei || hero.y + heroSize > enemy[i].y && hero.y + heroSize < enemy[i].y + enemyHei)) 
 		{
-			enemyDeath(i);
-			if (hero.hp != -1 && --hero.hp == 0)
-				console.log("умер");	
+			if (immortalTimer > immortalTimeout) {		// чек на временное бессмертие
+				immortalTimer = 0;
+				enemyDeath(i);
+				if (hero.hp != -1 && --hero.hp == 0)
+					console.log("умер");	// TODO: СМЭРТЬ
+			}
 		}
 		else if (++enemy[i].shootTimer >= enemyRateOfFire) {	// если не столкнулись то стреляет
 			enemy[i].shootTimer = 0;
@@ -293,10 +335,13 @@ function draw() {
 			shots[i].x += enemyShotSpeed;	// движение
 			if (shots[i].x + enemyShotWid / 2 >= hero.x && shots[i].x + enemyShotWid / 2 <= hero.x + heroSize &&
 			shots[i].y + enemyShotHei / 2 >= hero.y && shots[i].y + enemyShotHei / 2 <= hero.y + heroSize) {	// столкновение
-				shots.splice(i, 1);		// удаление снаряда
-				shotsImg.splice(i, 1);
-				if (hero.hp != -1 && --hero.hp == 0)
-					console.log("умер");
+				if (immortalTimer > immortalTimeout) {	// чек на временное бессмертие
+					immortalTimer = 0;
+					shots.splice(i, 1);		// удаление снаряда
+					shotsImg.splice(i, 1);
+					if (hero.hp != -1 && --hero.hp == 0)
+						console.log("умер");
+				}
 			}
 		}
 	}
