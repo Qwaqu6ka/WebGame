@@ -24,8 +24,8 @@ function scoreDraw() {
 	ctx.fillText(`Score: ${score}`, canvas.width / 2, 40);
 	ctx.fillText(`Press q to quit`, canvas.width / 3 * 2, 40);
 }
-
-const background = new Image();
+// фон для меню
+const background = new Image();		
 background.addEventListener("load", function() {
 	ctx.drawImage(background, 0, 0, canvas.width, canvas.height);
 	}, false);
@@ -153,6 +153,16 @@ function keyUpHandler(e) {
 	if(e.keyCode == 81) 	
         q_key = false;
 }
+
+function mouseMoveHandler(e) {	// для enent listener'a мышки
+	let relativeX = e.clientX - canvas.offsetLeft;
+	let relativeY = e.clientY - canvas.offsetTop;
+	if(relativeX > 0 && relativeX < canvas.width)
+		hero.x = relativeX - heroSize / 2;
+	if(relativeY > 0 && relativeY < canvas.height)
+		hero.y = relativeY - heroSize / 2;
+}
+
 
 //------------------------------------СПАВН ПРОТИВНИКОВ--------------------------------------
 function getRandomInt(max) {
@@ -542,10 +552,14 @@ function draw() {
 			else {
 				ctx.fillText(`Choose control: (Push K or M)`, canvas.width / 2, canvas.height / 4 * 2);
 				ctx.fillText(`K - arrow keys and space   M - mouse and LBM`, canvas.width / 2, canvas.height / 4 * 3);
-				if (k_key) 
+				if (k_key) {
 					control = "keyboard";
-				if (m_key) 
+					document.removeEventListener("mousemove", mouseMoveHandler, false);
+				}
+				if (m_key) {
 					control = "mouse";
+					document.addEventListener("mousemove", mouseMoveHandler, false);
+				}
 			}
 		}
 		else
@@ -563,23 +577,31 @@ function draw() {
 		explosionDraw();	// отрисовка анимации взрыва
 		
 		// обработка движения героя
-		if (upPressed && hero.y > 0) 
-			hero.y -= heroSpeed;
-		if (leftPressed && hero.x > hengineSize) 
-			hero.x -= heroSpeed;
-		if (downPressed && hero.y < canvas.height - heroSize)
-			hero.y += heroSpeed;
-		if (rightPressed && hero.x < canvas.width - heroSize) 
-			hero.x += heroSpeed;
-
-		//	обработка стрельбы героя
-		if (shoot) {
-			++heroShotTimeout;
-			if (heroShotTimeout >= heroRateOfFire) {
+		if (control == "keyboard") {
+			if (upPressed && hero.y > 0) 
+				hero.y -= heroSpeed;
+			if (leftPressed && hero.x > hengineSize) 
+				hero.x -= heroSpeed;
+			if (downPressed && hero.y < canvas.height - heroSize)
+				hero.y += heroSpeed;
+			if (rightPressed && hero.x < canvas.width - heroSize) 
+				hero.x += heroSpeed;
+			//	обработка стрельбы героя
+			if (shoot) {
+				if (++heroShotTimeout >= heroRateOfFire) {
+					heroShotTimeout = 0;
+					herosShoot();
+				}
+			}	
+		}
+		else {
+			if (++heroShotTimeout >= heroRateOfFire) {	// автоматическая стрельба
 				heroShotTimeout = 0;
 				herosShoot();
 			}
-		}	
+		}
+
+		
 		// движение и стрельба врагов
 		for (let i = 0; i < enemy.length; ++i) {
 			if (enemy[i].char == "b") 
