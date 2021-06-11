@@ -1,5 +1,8 @@
 let canvas = document.getElementById("myCanvas");
 let ctx = canvas.getContext("2d");
+let pause = true;
+let control = undefined;
+let difficulty = undefined;
 
 canvas.width = window.innerWidth;     // equals window dimension
 canvas.height = window.innerHeight;
@@ -12,12 +15,46 @@ class Shot {
 	}	// "char" means character
 }
 
+let bestScore = 0;
 let score = 0;
 function scoreDraw() {
 	ctx.font = "30px Comic Sans MS";
 	ctx.fillStyle = "white";
 	ctx.textAlign = "center";
 	ctx.fillText(`Score: ${score}`, canvas.width / 2, 40);
+	ctx.fillText(`Press q to quit`, canvas.width / 3 * 2, 40);
+}
+
+const background = new Image();
+background.addEventListener("load", function() {
+	ctx.drawImage(background, 0, 0, canvas.width, canvas.height);
+	}, false);
+background.src = "src/background.jpg";
+
+function cleanArrays() {
+	shots.splice(0, shots.length);
+	shotsImg.splice(0, shotsImg.length);
+	enemy.splice(0, enemy.length);
+	enemyImg.splice(0, enemyImg.length);
+	enemyEngineImg.splice(0, enemyEngineImg.length);
+	heartImg.splice(0, heartImg.length);
+}
+
+function startGame() {
+	pause = false;
+	setHealth();
+	spawnSeed = mySpawnSeed;
+	score = 0;
+}
+
+function endGame() {
+	cleanArrays();
+	pause = true;
+	control = undefined;
+	difficulty = undefined;
+	spawnSeed = 0;
+	if (score > bestScore)
+		bestScore = score;
 }
 
 //-----------------------------------ПАРАМЕТРЫ ГЕРОЯ-------------------------------------------
@@ -29,7 +66,7 @@ class Hero {
 	}
 }
 
-const hero = new Hero(3);
+let hero = new Hero(3);
 const heroSize = 120;
 const hengineSize = 40;
 const heroSpeed = 6;
@@ -62,44 +99,59 @@ let rightPressed = false;
 let downPressed = false;
 let leftPressed = false;
 let shoot = false;
+let c_key = false;
+let g_key = false;
+let k_key = false;
+let m_key = false;
+let q_key = false;
 
 document.addEventListener("keydown", keyDownHandler, false);
 document.addEventListener("keyup", keyUpHandler, false);
 
 function keyDownHandler(e) {
-    if(e.keyCode == 39) { 	
+    if(e.keyCode == 39) 	
         rightPressed = true;
-	}
-    else if(e.keyCode == 37) {
+    else if(e.keyCode == 37)
         leftPressed = true;
-    }
-	if (e.keyCode == 38) {
+	if (e.keyCode == 38)
 		upPressed = true;
-	}
-	else if (e.keyCode == 40) {
+	else if (e.keyCode == 40)
 		downPressed = true;
-	}
-	if(e.keyCode == 32) { 	
+	if(e.keyCode == 32) 	
         shoot = true;
-	}
+	if(e.keyCode == 67) 	
+        c_key = true;
+	if(e.keyCode == 71) 	
+        g_key = true;
+	if(e.keyCode == 75) 	
+        k_key = true;
+	if(e.keyCode == 77) 	
+        m_key = true;
+	if(e.keyCode == 81) 	
+        q_key = true;
 }
 
 function keyUpHandler(e) {
-    if (e.keyCode == 39) {
+    if (e.keyCode == 39)
         rightPressed = false;
-    }
-    else if (e.keyCode == 37) {
+    else if (e.keyCode == 37)
         leftPressed = false;
-    }
-	if (e.keyCode == 38) {
+	if (e.keyCode == 38)
         upPressed = false;
-    }
-    else if (e.keyCode == 40) {
+    else if (e.keyCode == 40)
         downPressed = false;
-    }
-	if(e.keyCode == 32) { 	
+	if(e.keyCode == 32) 	
         shoot = false;
-	}
+	if(e.keyCode == 67) 	
+        c_key = false;
+	if(e.keyCode == 71) 	
+        g_key = false;
+	if(e.keyCode == 75) 	
+        k_key = false;
+	if(e.keyCode == 77) 	
+        m_key = false;
+	if(e.keyCode == 81) 	
+        q_key = false;
 }
 
 //------------------------------------СПАВН ПРОТИВНИКОВ--------------------------------------
@@ -127,6 +179,8 @@ const enemyWid = 130;
 const enemyHei = 80;
 const enemyEngWid = 60;
 const enemyEngHei = 60;
+let spawnSeed = 0;
+const mySpawnSeed = 150;
 
 const bossWid = 500;	// параметры босса
 const bossHei = 500;
@@ -140,8 +194,6 @@ const dxBoss = -1;
 const dyBoss = -1;
 let bossAlive = false;
 
-const enemySpawnTime = 200;
-let enemySpawnTimeout = enemySpawnTime;
 const enemy = [];
 const enemyImg = [];
 const enemyEngineImg = [];
@@ -306,19 +358,22 @@ let immortalTimer = 0;
 const immortalTimeout = 300;
 const heartX = [hero.hp];
 const heartImg = [];
-for (let i = 0; i < hero.hp; ++i) {
-	if (i == 0) {
-		heartX[i] = 20;
-		continue;
+
+function setHealth() {
+	for (let i = 0; i < hero.hp; ++i) {
+		if (i == 0) {
+			heartX[i] = 20;
+			continue;
+		}
+		heartX[i] = heartX[i - 1] + heartStepX;
 	}
-	heartX[i] = heartX[i - 1] + heartStepX;
-}
-for (let i = 0; i < hero.hp; ++i) {
-	heartImg.push(new Image());
-	heartImg[heartImg.length - 1].addEventListener("load", function() {
-		ctx.drawImage(heartImg[heartImg.length - 1], heartX[i], heartY, heartWid, heartHei);
-		}, false);
-	heartImg[heartImg.length - 1].src = "src/hp.png";
+	for (let i = 0; i < hero.hp; ++i) {
+		heartImg.push(new Image());
+		heartImg[heartImg.length - 1].addEventListener("load", function() {
+			ctx.drawImage(heartImg[heartImg.length - 1], heartX[i], heartY, heartWid, heartHei);
+			}, false);
+		heartImg[heartImg.length - 1].src = "src/hp.png";
+	}
 }
 
 function healthDraw() {
@@ -330,7 +385,7 @@ function healthDraw() {
 	}
 	else {
 		for (let i = 0; i < hero.hp; ++i) {
-			ctx.drawImage(heartImg[heartImg.length - 1], heartX[i], heartY, heartWid, heartHei);
+			ctx.drawImage(heartImg[i], heartX[i], heartY, heartWid, heartHei);
 		}
 	}
 }
@@ -346,12 +401,18 @@ function enemyMovement(i) {
 	if ((hero.x + heroSize < enemy[i].x + enemyWid && hero.x + heroSize > enemy[i].x || hero.x < enemy[i].x + enemyWid && hero.x > enemy[i].x) 
 	&& (hero.y > enemy[i].y && hero.y < enemy[i].y + enemyHei || hero.y + heroSize > enemy[i].y && hero.y + heroSize < enemy[i].y + enemyHei)) 
 	{
-		if (immortalTimer > immortalTimeout) {		// чек на временное бессмертие
-			immortalTimer = 0;
+		if (hero.hp == -1) {
 			enemyDeath(i);
 			score += 5;
-			if (hero.hp != -1 && --hero.hp == 0)
-				console.log("умер");	// TODO: СМЭРТЬ
+		}
+		else {
+			if (immortalTimer > immortalTimeout) {		// чек на временное бессмертие
+				immortalTimer = 0;
+				enemyDeath(i);
+				score += 5;
+				if (hero.hp != -1 && --hero.hp == 0)
+					endGame();
+			}
 		}
 	}
 	else if (++enemy[i].shootTimer >= enemyRateOfFire) {	// если не столкнулись то стреляет
@@ -371,13 +432,20 @@ function bossMovement(i) {
 	if ((hero.x + heroSize < enemy[i].x + bossWid && hero.x + heroSize > enemy[i].x || hero.x < enemy[i].x + bossWid && hero.x > enemy[i].x) 
 	&& (hero.y > enemy[i].y && hero.y < enemy[i].y + bossHei || hero.y + heroSize > enemy[i].y && hero.y + heroSize < enemy[i].y + bossHei)) 
 	{
-		if (immortalTimer > immortalTimeout) {		// чек на временное бессмертие
-			immortalTimer = 0;
+		if (hero.hp == -1) {
 			enemyDeath(i);
 			score += 15;
 			bossAlive = false;
-			if (hero.hp != -1 && --hero.hp == 0)
-				console.log("умер");	// TODO: СМЭРТЬ
+		}
+		else {
+			if (immortalTimer > immortalTimeout) {		// чек на временное бессмертие
+				immortalTimer = 0;
+				enemyDeath(i);
+				score += 15;
+				bossAlive = false;
+				if (hero.hp != -1 && --hero.hp == 0)
+					endGame();
+			}
 		}
 	}
 	else if (++enemy[i].shootTimer >= bossRateOfFire) {		// если не столкнулись то стреляет
@@ -428,7 +496,7 @@ function shotsProcessing() {
 					shots.splice(i, 1);		// удаление снаряда
 					shotsImg.splice(i, 1);
 					if (hero.hp != -1 && --hero.hp == 0)
-						console.log("умер");	// TODO: СМЕРТЬ
+						endGame();
 				}
 			}
 		}
@@ -441,7 +509,7 @@ function shotsProcessing() {
 					shots.splice(i, 1);		// удаление снаряда
 					shotsImg.splice(i, 1);
 					if (hero.hp != -1 && --hero.hp == 0)
-						console.log("умер");	// TODO: СМЕРТЬ
+						endGame();
 				}
 			}
 		}
@@ -450,53 +518,86 @@ function shotsProcessing() {
 
 //------------------------------------ГЛАВНЫЙ ЦИКЛ-----------------------------------------
 function draw() {
-	ctx.clearRect(0, 0, canvas.width, canvas.height);	// отчистка холст
-	heroDraw();		// отрисовка героя
-	enemyDraw();	// отрисовка противников
-	engineMover = -engineMover;	// движение огня у кораблей
-	scoreDraw();	// отрисовка очков
-	++immortalTimer;
-	healthDraw();	// отрисовка здоровья
-	shotsDraw();	// отрисовка всех снарядов
-	++deathTimer;
-	explosionDraw();	// отрисовка анимации взрыва
-	
-	// обработка движения героя
-	if (upPressed && hero.y > 0) 
-		hero.y -= heroSpeed;
-	if (leftPressed && hero.x > hengineSize) 
-		hero.x -= heroSpeed;
-	if (downPressed && hero.y < canvas.height - heroSize)
-		hero.y += heroSpeed;
-	if (rightPressed && hero.x < canvas.width - heroSize) 
-		hero.x += heroSpeed;
-
-	//	обработка стрельбы героя
-	if (shoot) {
-		++heroShotTimeout;
-		if (heroShotTimeout >= heroRateOfFire) {
-			heroShotTimeout = 0;
-			herosShoot();
+	ctx.clearRect(0, 0, canvas.width, canvas.height);	// отчистка холста
+	if (pause) {
+		ctx.drawImage(background, 0, 0, canvas.width, canvas.height);
+		ctx.font = "50px Comic Sans MS";
+		ctx.fillStyle = "white";
+		ctx.textAlign = "center";
+		ctx.fillText(`Score: ${score}`, canvas.width / 3, canvas.height / 4);
+		ctx.fillText(`Best score: ${bestScore}`, canvas.width / 3 * 2, canvas.height / 4);
+		if (control == undefined || difficulty == undefined) {
+			if (difficulty == undefined) {
+				ctx.fillText(`Choose difficulty: (Push C or G)`, canvas.width / 2, canvas.height / 4 * 2);
+				ctx.fillText(`С - common   G - god mode`, canvas.width / 2, canvas.height / 4 * 3);
+				if (c_key) {
+					difficulty = "common";
+					hero = new Hero(3);
+				}
+				if (g_key) {
+					difficulty = "god";
+					hero = new Hero(-1);
+				}
+			}
+			else {
+				ctx.fillText(`Choose control: (Push K or M)`, canvas.width / 2, canvas.height / 4 * 2);
+				ctx.fillText(`K - arrow keys and space   M - mouse and LBM`, canvas.width / 2, canvas.height / 4 * 3);
+				if (k_key) 
+					control = "keyboard";
+				if (m_key) 
+					control = "mouse";
+			}
 		}
-	}	
-	// движение и стрельба врагов
-	for (let i = 0; i < enemy.length; ++i) {
-		if (enemy[i].char == "b") 
-			bossMovement(i);
-		else 
-			enemyMovement(i);
-	}	
-	// обработка спавна врагов
-	// ++enemySpawnTimeout;		// 1) вариант с определённым временем спавна
-	// if (enemySpawnTimeout == enemySpawnTime) {
-	if (getRandomInt(150) < 1) {	// 2) вариант с раномом
-		// enemySpawnTimeout = 0;
-		spawnEnemy();
+		else
+			startGame();
 	}
-	if (!bossAlive && score % 100 == 0 && score != 0) { 	//TODO: поменять спавн
-		bossAlive = true;
-		spawnEnemy("b");
+	else {
+		heroDraw();		// отрисовка героя
+		enemyDraw();	// отрисовка противников
+		engineMover = -engineMover;	// движение огня у кораблей
+		scoreDraw();	// отрисовка очков
+		++immortalTimer;
+		healthDraw();	// отрисовка здоровья
+		shotsDraw();	// отрисовка всех снарядов
+		++deathTimer;
+		explosionDraw();	// отрисовка анимации взрыва
+		
+		// обработка движения героя
+		if (upPressed && hero.y > 0) 
+			hero.y -= heroSpeed;
+		if (leftPressed && hero.x > hengineSize) 
+			hero.x -= heroSpeed;
+		if (downPressed && hero.y < canvas.height - heroSize)
+			hero.y += heroSpeed;
+		if (rightPressed && hero.x < canvas.width - heroSize) 
+			hero.x += heroSpeed;
+
+		//	обработка стрельбы героя
+		if (shoot) {
+			++heroShotTimeout;
+			if (heroShotTimeout >= heroRateOfFire) {
+				heroShotTimeout = 0;
+				herosShoot();
+			}
+		}	
+		// движение и стрельба врагов
+		for (let i = 0; i < enemy.length; ++i) {
+			if (enemy[i].char == "b") 
+				bossMovement(i);
+			else 
+				enemyMovement(i);
+		}	
+		// обработка спавна врагов
+		if (getRandomInt(spawnSeed) < 1) 
+			spawnEnemy();
+
+		if (!bossAlive && score % 100 == 0 && score != 0) { 	//TODO: поменять спавн
+			bossAlive = true;
+			spawnEnemy("b");
+		}
+		shotsProcessing();	// обработка движения и столкновения снарядов
+		if (q_key)
+			endGame();
 	}
-	shotsProcessing();	// обработка движения и столкновения снарядов
 }
 setInterval(draw, 10);
