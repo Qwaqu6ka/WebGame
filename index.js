@@ -1,10 +1,10 @@
 let canvas = document.getElementById("myCanvas");
 let ctx = canvas.getContext("2d");
 let pause = true;
-let control = undefined;
-let difficulty = undefined;
+let control = null;
+let difficulty = null;
 
-canvas.width = window.innerWidth;     // equals window dimension
+canvas.width = window.innerWidth;     // equals window dimension		// 1880, 977
 canvas.height = window.innerHeight;
 
 class Shot {
@@ -50,8 +50,8 @@ function startGame() {
 function endGame() {
 	cleanArrays();
 	pause = true;
-	control = undefined;
-	difficulty = undefined;
+	control = null;
+	difficulty = null;
 	spawnSeed = 0;
 	if (score > bestScore)
 		bestScore = score;
@@ -536,8 +536,8 @@ function draw() {
 		ctx.textAlign = "center";
 		ctx.fillText(`Score: ${score}`, canvas.width / 3, canvas.height / 4);
 		ctx.fillText(`Best score: ${bestScore}`, canvas.width / 3 * 2, canvas.height / 4);
-		if (control == undefined || difficulty == undefined) {
-			if (difficulty == undefined) {
+		if (control == null || difficulty == null) {
+			if (difficulty == null) {
 				ctx.fillText(`Choose difficulty: (Push C or G)`, canvas.width / 2, canvas.height / 4 * 2);
 				ctx.fillText(`С - common   G - god mode`, canvas.width / 2, canvas.height / 4 * 3);
 				if (c_key) {
